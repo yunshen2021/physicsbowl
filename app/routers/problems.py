@@ -21,6 +21,30 @@ router = APIRouter()
 TEMPLATES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "templates")
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
+# Official AAPT PhysicsBowl exam PDFs (each includes that year's equation
+# sheet on its cover pages). Verified reachable (HTTP 200) for every year
+# present in questions.json.
+AAPT_EXAM_LINKS = {
+    2007: "https://www.aapt.org/programs/physicsbowl/upload/PhysicsBowl_2007.pdf",
+    2008: "https://www.aapt.org/Programs/PhysicsBowl/upload/PhysicsBowl_2008_Exam.pdf",
+    2009: "https://www.aapt.org/Programs/PhysicsBowl/upload/PhysicsBowl_2009_Exam.pdf",
+    2010: "https://www.aapt.org/programs/physicsbowl/upload/PhysicsBowl_2010.pdf",
+    2011: "https://www.aapt.org/programs/physicsbowl/upload/PhysicsBowl_2011.pdf",
+    2012: "https://www.aapt.org/programs/physicsbowl/upload/PhysicsBowl_2012.pdf",
+    2013: "https://www.aapt.org/programs/physicsbowl/upload/PhysicsBowl_2013.pdf",
+    2014: "https://www.aapt.org/Programs/PhysicsBowl/upload/PhysicsBowl_2014_Exam.pdf",
+    2015: "https://www.aapt.org/Programs/PhysicsBowl/upload/2015-PhysicsBowl-Final.pdf",
+    2016: "https://www.aapt.org/Programs/PhysicsBowl/upload/PhysicsBowl_2016.pdf",
+    2017: "https://www.aapt.org/Programs/PhysicsBowl/upload/PhysicsBowl_2017.pdf",
+    2018: "https://www.aapt.org/Programs/PhysicsBowl/upload/2018-PhysicsBowl-Exam-2.pdf",
+    2019: "https://www.aapt.org/Programs/PhysicsBowl/upload/2019-PhysicsBowl-Exam.pdf",
+    2021: "https://www.aapt.org/Programs/PhysicsBowl/upload/2021-PhysicsBowl-Exam-2.pdf",
+    2022: "https://www.aapt.org/Programs/PhysicsBowl/upload/PB-Exam-2022-2.pdf",
+    2023: "https://www.aapt.org/Programs/PhysicsBowl/upload/PB-Exam-Draft-J-2023-2.pdf",
+    2024: "https://www.aapt.org/Programs/PhysicsBowl/upload/PB-Exam-Draft-I-Final-version-2024.pdf",
+    2025: "https://www.aapt.org/Programs/PhysicsBowl/upload/PB-Exam-25-2.pdf",
+}
+
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 def load_questions():
@@ -155,7 +179,8 @@ async def problem_arena(request: Request, problem_id: str):
             "next_id": next_id,
             "formulas_data": formulas_data,
             "total_problems": len(all_q),
-            "problem_number": q_index + 1
+            "problem_number": q_index + 1,
+            "aapt_exam_link": AAPT_EXAM_LINKS.get(question.get("year"))
         }
     )
 

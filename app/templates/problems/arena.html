@@ -94,9 +94,15 @@
               <div style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem;">Key Formulas Used:</div>
               <div style="display: flex; flex-direction: column; gap: 0.3rem;">
                 {% for f in question.solution.formulasUsed %}
-                  <div style="background-color: var(--bg-secondary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem;">
-                    $${{ f }}$$
-                  </div>
+                  {% if aapt_exam_link %}
+                    <a href="{{ aapt_exam_link }}" target="_blank" rel="noopener" style="display: block; background-color: var(--bg-secondary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem; color: var(--accent-blue); text-decoration: underline;" title="Open the official {{ question.year }} AAPT PhysicsBowl exam PDF (includes the equation sheet)">
+                      {{ f }} ↗
+                    </a>
+                  {% else %}
+                    <div onclick="toggleFormulaDrawer()" style="background-color: var(--bg-secondary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem; cursor: pointer; color: var(--accent-blue); text-decoration: underline;" title="Open AAPT Formula Sheet">
+                      {{ f }}
+                    </div>
+                  {% endif %}
                 {% endfor %}
               </div>
             </div>
@@ -159,9 +165,15 @@
             <div style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem;">Formulas Applied:</div>
             <div style="display: flex; flex-direction: column; gap: 0.4rem;">
               {% for f in question.solution.formulasUsed %}
-                <div style="background-color: var(--bg-primary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem;">
-                  $${{ f }}$$
-                </div>
+                {% if aapt_exam_link %}
+                  <a href="{{ aapt_exam_link }}" target="_blank" rel="noopener" style="display: block; background-color: var(--bg-primary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem; color: var(--accent-blue); text-decoration: underline;" title="Open the official {{ question.year }} AAPT PhysicsBowl exam PDF (includes the equation sheet)">
+                    {{ f }} ↗
+                  </a>
+                {% else %}
+                  <div onclick="toggleFormulaDrawer()" style="background-color: var(--bg-primary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem; cursor: pointer; color: var(--accent-blue); text-decoration: underline;" title="Open AAPT Formula Sheet">
+                    {{ f }}
+                  </div>
+                {% endif %}
               {% endfor %}
             </div>
           </div>
