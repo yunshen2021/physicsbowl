@@ -119,6 +119,12 @@ def is_bookmarked(question_id: str) -> bool:
         cursor.execute("SELECT question_id FROM bookmarks WHERE question_id = %s", (question_id,))
         return cursor.fetchone() is not None
 
+def get_all_bookmarks() -> set:
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT question_id FROM bookmarks")
+        return {r["question_id"] for r in cursor.fetchall()}
+
 def save_note(question_id: str, content: str):
     with get_db() as conn:
         cursor = conn.cursor()

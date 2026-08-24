@@ -11,6 +11,7 @@ from app.database import (
     get_all_question_statuses,
     toggle_bookmark,
     is_bookmarked,
+    get_all_bookmarks,
     save_note,
     get_note
 )
@@ -73,6 +74,7 @@ async def list_problems(
 ):
     all_q = load_questions()
     user_statuses = get_all_question_statuses()
+    bookmarked_ids = get_all_bookmarks()
 
     filtered = []
     topics = sorted(list(set(q["topic"] for q in all_q)))
@@ -81,7 +83,7 @@ async def list_problems(
     for q in all_q:
         q_status = user_statuses.get(q["id"], "unsolved")
         q["user_status"] = q_status
-        q["is_bookmarked"] = is_bookmarked(q["id"])
+        q["is_bookmarked"] = q["id"] in bookmarked_ids
 
         # Filter by Year
         if year != "all":
