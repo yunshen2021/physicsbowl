@@ -12,9 +12,9 @@ payload = {
     "division": 1,
     "title": "AAPT PhysicsBowl Division 1 Mock Exam",
     "answers": {
-        "pb-mech-02": "A", # Correct
-        "pb-em-02": "B",   # Correct
-        "pb-thermo-01": "C" # Incorrect (Correct is B)
+        "pb-2025-01": "C", # Correct
+        "pb-2025-02": "C", # Correct
+        "pb-2025-03": "A"  # Incorrect (Correct is D)
     },
     "time_taken_seconds": 180
 }

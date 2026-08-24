@@ -40,6 +40,7 @@ def load_formulas():
 @router.get("/problems", response_class=HTMLResponse)
 async def list_problems(
     request: Request,
+    year: str = "all",
     division: str = "all",
     topic: str = "all",
     difficulty: str = "all",
@@ -51,11 +52,21 @@ async def list_problems(
 
     filtered = []
     topics = sorted(list(set(q["topic"] for q in all_q)))
+    years = sorted(list(set(q.get("year", 2025) for q in all_q if q.get("year"))), reverse=True)
 
     for q in all_q:
         q_status = user_statuses.get(q["id"], "unsolved")
         q["user_status"] = q_status
         q["is_bookmarked"] = is_bookmarked(q["id"])
+
+        # Filter by Year
+        if year != "all":
+            try:
+                y_int = int(year)
+                if q.get("year") != y_int:
+                    continue
+            except ValueError:
+                pass
 
         # Filter by Division
         if division != "all":
@@ -100,6 +111,8 @@ async def list_problems(
         context={
             "problems": filtered,
             "topics": topics,
+            "years": years,
+            "current_year": year,
             "current_division": division,
             "current_topic": topic,
             "current_difficulty": difficulty,

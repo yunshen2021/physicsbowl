@@ -13,12 +13,13 @@ class Solution(BaseModel):
 
 class Question(BaseModel):
     id: str
+    question_number: Optional[int] = None
     title: str
     division: Any  # 1, 2, or "both"
     topic: str
     difficulty: str
     acceptance_rate: str
-    year: Optional[int] = 2023
+    year: Optional[int] = 2025
     content: str
     diagramSvg: Optional[str] = None
     options: List[Option]

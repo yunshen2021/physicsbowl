@@ -133,7 +133,7 @@ def save_contest_result(session_id: str, title: str, division: int, score: int, 
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT INTO contest_sessions (id, title, division, score, total_questions, time_taken_seconds, answers_json)
+            INSERT OR REPLACE INTO contest_sessions (id, title, division, score, total_questions, time_taken_seconds, answers_json)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (session_id, title, division, score, total, time_taken, answers_json))
         conn.commit()

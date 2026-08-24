@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import re
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -64,33 +65,74 @@ CONTEST_PRESETS = {
 
 @router.get("/contest", response_class=HTMLResponse)
 async def contest_hub(request: Request):
+    all_q = load_questions()
+    years = sorted(list(set(q.get("year", 2025) for q in all_q if q.get("year"))), reverse=True)
     recent_contests = get_recent_contests()
+    
+    # Build list of official contests by year
+    official_contests = []
+    for y in years:
+        year_q = [q for q in all_q if q.get("year") == y]
+        div1_count = sum(1 for q in year_q if q.get("question_number", 0) <= 40)
+        div2_count = sum(1 for q in year_q if q.get("question_number", 0) >= 11)
+        official_contests.append({
+            "year": y,
+            "total_questions": len(year_q),
+            "div1_id": f"pb-{y}-div1",
+            "div2_id": f"pb-{y}-div2",
+            "div1_count": min(40, div1_count),
+            "div2_count": min(40, div2_count)
+        })
+
     return templates.TemplateResponse(
         request=request,
         name="contest/hub.html",
         context={
             "presets": CONTEST_PRESETS,
+            "official_contests": official_contests,
+            "years": years,
             "recent_contests": recent_contests
         }
     )
 
 @router.get("/contest/{contest_type}", response_class=HTMLResponse)
 async def contest_runner(request: Request, contest_type: str):
-    preset = CONTEST_PRESETS.get(contest_type)
-    if not preset:
-        raise HTTPException(status_code=404, detail="Contest preset not found")
-
     all_q = load_questions()
-    div = preset["division"]
     
-    # Filter questions matching division or both
-    matching_q = [q for q in all_q if q["division"] in [div, "both"]]
-    
-    # If not enough, take available questions
-    if len(matching_q) < preset["question_count"]:
-        contest_q = matching_q if matching_q else all_q
+    # Check if contest_type is an official year contest (e.g. pb-2024-div1)
+    year_match = re.match(r"^pb-(\d{4})-div([12])$", contest_type)
+    if year_match:
+        year = int(year_match.group(1))
+        div = int(year_match.group(2))
+        
+        # Select questions for this year and division
+        year_q = [q for q in all_q if q.get("year") == year]
+        if div == 1:
+            contest_q = [q for q in year_q if q.get("question_number", 0) <= 40]
+        else:
+            contest_q = [q for q in year_q if q.get("question_number", 0) >= 11]
+            
+        contest_q = sorted(contest_q, key=lambda x: x.get("question_number", 0))
+        
+        preset = {
+            "id": contest_type,
+            "title": f"Official {year} AAPT PhysicsBowl - Division {div}",
+            "division": div,
+            "description": f"Authentic official {year} PhysicsBowl competition exam for Division {div}.",
+            "duration_minutes": 45,
+            "question_count": len(contest_q)
+        }
     else:
-        contest_q = matching_q[:preset["question_count"]]
+        preset = CONTEST_PRESETS.get(contest_type)
+        if not preset:
+            raise HTTPException(status_code=404, detail="Contest preset not found")
+
+        div = preset["division"]
+        matching_q = [q for q in all_q if q["division"] in [div, "both"]]
+        if len(matching_q) < preset["question_count"]:
+            contest_q = matching_q if matching_q else all_q
+        else:
+            contest_q = matching_q[:preset["question_count"]]
 
     formulas_data = load_formulas()
     session_id = str(uuid.uuid4())

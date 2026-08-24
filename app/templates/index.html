@@ -108,6 +108,34 @@
 
   </div>
 
+  <!-- Competition Years Quick Navigation Archive -->
+  <div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem;">
+        🏛️ Official AAPT PhysicsBowl Problem Archives (2007–2025)
+      </h3>
+      <a href="/problems" style="font-size: 0.85rem; color: #58a6ff;">View All {{ total_problems }} Problems →</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.6rem;">
+      {% for yd in years_data %}
+        <a href="/problems?year={{ yd.year }}" class="card" style="background-color: var(--bg-tertiary); border-color: var(--border-color); padding: 0.6rem 0.8rem; text-decoration: none; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 700; font-size: 0.95rem; color: var(--text-primary);">{{ yd.year }}</span>
+            <span style="font-size: 0.75rem; color: #38bdf8; font-family: monospace;">{{ yd.total }} Qs</span>
+          </div>
+          <div style="margin-top: 0.4rem; font-size: 0.75rem; color: var(--text-secondary);">
+            {% if yd.solved > 0 %}
+              <span style="color: #3fb950;">✓ {{ yd.solved }} solved</span>
+            {% else %}
+              <span>Unsolved</span>
+            {% endif %}
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- Bottom Section: Quick Practice & Recent Submissions -->
   <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
     

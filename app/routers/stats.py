@@ -106,6 +106,18 @@ async def dashboard(request: Request):
             sub_dict["title"] = q_lookup.get(sub_dict["question_id"], sub_dict["question_id"])
             recent_submissions.append(sub_dict)
 
+    # Years breakdown
+    years_data = []
+    years = sorted(list(set(q.get("year", 2025) for q in all_q if q.get("year"))), reverse=True)
+    for y in years:
+        y_q = [q for q in all_q if q.get("year") == y]
+        y_solved = sum(1 for q in y_q if statuses.get(q["id"]) == "solved")
+        years_data.append({
+            "year": y,
+            "total": len(y_q),
+            "solved": y_solved
+        })
+
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -116,6 +128,7 @@ async def dashboard(request: Request):
             "topic_map": topic_map,
             "topic_map_json": json.dumps(topic_map),
             "diff_map": diff_map,
+            "years_data": years_data,
             "streak": streak,
             "heatmap_days": heatmap_days,
             "recent_contests": recent_contests,

@@ -22,5 +22,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# PDF caches (raw downloaded PDFs not needed in repo)
+data/pdf_cache/
+*.pdf
+
 # Environment variables
 .env

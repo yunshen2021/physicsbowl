@@ -85,6 +85,46 @@
 
   </div>
 
+  <!-- Official AAPT Past Exams Archive -->
+  <div class="card" style="margin-bottom: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+      <div>
+        <h3 style="font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem;">
+          🏛️ Official AAPT PhysicsBowl Past Contests (2007–2025)
+        </h3>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.2rem;">
+          Select any competition year to take the full authentic 45-minute timed competition under official AAPT exam conditions.
+        </p>
+      </div>
+      <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+        {{ official_contests | length }} Contest Years Available
+      </span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;">
+      {% for oc in official_contests %}
+        <div class="card" style="background-color: var(--bg-tertiary); border-color: var(--border-color); padding: 1rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+            <span style="font-weight: 800; font-size: 1.1rem; color: var(--text-primary);">
+              {{ oc.year }} Exam
+            </span>
+            <span style="font-size: 0.75rem; color: var(--text-secondary); font-family: monospace;">
+              {{ oc.total_questions }} Qs Total
+            </span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <a href="/contest/{{ oc.div1_id }}" class="btn btn-primary" style="flex: 1; font-size: 0.8rem; padding: 0.35rem 0.4rem; text-align: center;" title="Take {{ oc.year }} Division 1 Exam">
+              Div 1 ({{ oc.div1_count }}Q)
+            </a>
+            <a href="/contest/{{ oc.div2_id }}" class="btn btn-blue" style="flex: 1; font-size: 0.8rem; padding: 0.35rem 0.4rem; text-align: center;" title="Take {{ oc.year }} Division 2 Exam">
+              Div 2 ({{ oc.div2_count }}Q)
+            </a>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
   <!-- Past Contest Sessions -->
   <div class="card">
     <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">📜 Your Past Exam Attempts</h3>
