@@ -86,7 +86,7 @@
     </thead>
     <tbody>
       {% for p in problems %}
-        <tr>
+        <tr onclick="window.location='/problems/{{ p.id }}'" style="cursor: pointer;">
           <!-- Status Icon -->
           <td style="text-align: center;">
             {% if p.user_status == 'solved' %}
