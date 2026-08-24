@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}AAPT Formula Sheet | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+        📑 Official AAPT Physics Constants & Formula Sheet
+      </h1>
+      <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+        Standard reference sheet provided for the AAPT PhysicsBowl competition (Division 1 & Division 2).
+      </p>
+    </div>
+    <div>
+      <input type="text" id="formula-search-input" class="search-input" style="width: 280px;" placeholder="🔍 Search formula or constant..." oninput="searchFormulas(this.value)">
+    </div>
+  </div>
+
+  <!-- Physical Constants Section -->
+  <div class="card" style="margin-bottom: 2rem;" id="constants-section">
+    <h2 style="font-size: 1.2rem; font-weight: 700; color: #58a6ff; margin-bottom: 1rem;">
+      ⚡ Standard Physical Constants
+    </h2>
+    <div style="overflow-x: auto;">
+      <table class="problems-table">
+        <thead>
+          <tr>
+            <th>Quantity</th>
+            <th style="width: 140px;">Symbol</th>
+            <th>Value</th>
+            <th>Unit</th>
+          </tr>
+        </thead>
+        <tbody id="constants-table-body">
+          {% for c in constants %}
+            <tr class="constant-row">
+              <td style="font-weight: 600;">{{ c.name }}</td>
+              <td>${{ c.symbol }}$</td>
+              <td>${{ c.value }}$</td>
+              <td>${{ c.unit }}$</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Equations Categorized by Domain -->
+  <div style="display: flex; flex-direction: column; gap: 1.5rem;" id="categories-section">
+    {% for cat in categories %}
+      <div class="card formula-category-card">
+        <h2 style="font-size: 1.2rem; font-weight: 700; color: var(--accent-yellow); margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">
+          {{ cat.category }}
+        </h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem;">
+          {% for f in cat.formulas %}
+            <div class="card formula-item-card" style="background-color: var(--bg-tertiary);">
+              <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 0.5rem; text-transform: uppercase;">
+                {{ f.title }}
+              </div>
+              <div style="font-size: 1rem; overflow-x: auto; padding: 0.25rem 0;">
+                $${{ f.latex }}$$
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.renderMathInElement) {
+      window.renderMathInElement(document.body, {
+        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+        throwOnError: false
+      });
+    }
+  });
+
+  function searchFormulas(query) {
+    const q = query.toLowerCase();
+
+    // Filter constants table
+    const rows = document.querySelectorAll(".constant-row");
+    rows.forEach(row => {
+      if (row.textContent.toLowerCase().includes(q)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+
+    // Filter formula cards
+    const cards = document.querySelectorAll(".formula-item-card");
+    cards.forEach(card => {
+      if (card.textContent.toLowerCase().includes(q)) {
+        card.style.display = "";
+      } else {
+        card.style.display = "none";
+      }
+    });
+  }
+</script>
+{% endblock %}

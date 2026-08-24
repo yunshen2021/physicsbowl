@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Hero Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+        ⚡ PhysicsBowl Training Arena
+      </h1>
+      <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+        Master high school competition physics (AAPT Division 1 & Division 2) with active recall and timed simulations.
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+      <a href="/problems" class="btn btn-primary">🔥 Start Practice</a>
+      <a href="/contest" class="btn btn-blue">⏱️ 45-Min Timed Exam</a>
+    </div>
+  </div>
+
+  <!-- Top Metrics Summary Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    
+    <!-- Solved Counter -->
+    <div class="card" style="display: flex; align-items: center; gap: 1rem;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(46, 160, 67, 0.2); border: 2px solid #2ea043; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+        ✓
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Problems Solved</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">
+          {{ solved_problems }} <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: normal;">/ {{ total_problems }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Streak -->
+    <div class="card" style="display: flex; align-items: center; gap: 1rem;">
+      <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(210, 153, 34, 0.2); border: 2px solid #d29922; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+        🔥
+      </div>
+      <div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Daily Streak</div>
+        <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-yellow);">
+          {{ streak }} <span style="font-size: 0.9rem; color: var(--text-secondary); font-weight: normal;">Days</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Difficulty Breakdown -->
+    <div class="card">
+      <div style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.5rem;">Difficulty Progress</div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.3rem;">
+        <span style="color: #3fb950;">Easy: {{ diff_map['Easy']['solved'] }}/{{ diff_map['Easy']['total'] }}</span>
+        <span style="color: #e3b341;">Med: {{ diff_map['Medium']['solved'] }}/{{ diff_map['Medium']['total'] }}</span>
+        <span style="color: #ff7b72;">Hard: {{ diff_map['Hard']['solved'] }}/{{ diff_map['Hard']['total'] }}</span>
+      </div>
+      <div style="width: 100%; height: 6px; background-color: var(--bg-tertiary); border-radius: 3px; overflow: hidden; display: flex;">
+        <div style="width: {{ (diff_map['Easy']['solved'] / (total_problems or 1)) * 100 }}%; background-color: #2ea043;"></div>
+        <div style="width: {{ (diff_map['Medium']['solved'] / (total_problems or 1)) * 100 }}%; background-color: #d29922;"></div>
+        <div style="width: {{ (diff_map['Hard']['solved'] / (total_problems or 1)) * 100 }}%; background-color: #f85149;"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Middle Section: Heatmap & Radar Chart -->
+  <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+    
+    <!-- LeetCode-style Heatmap -->
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h3 style="font-size: 1.05rem; font-weight: 700;">📅 Submission Activity (Last 60 Days)</h3>
+        <span style="font-size: 0.8rem; color: var(--text-secondary);">Continuous training</span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 5px; padding: 0.5rem 0;">
+        {% for day in heatmap_days %}
+          <div class="heatmap-cell level-{{ day.level }}" 
+               title="{{ day.date }}: {{ day.count }} submissions"
+               style="cursor: pointer;"></div>
+        {% endfor %}
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+        <span>Less</span>
+        <div style="display: flex; gap: 4px; align-items: center;">
+          <div class="heatmap-cell" style="width: 10px; height: 10px;"></div>
+          <div class="heatmap-cell level-1" style="width: 10px; height: 10px;"></div>
+          <div class="heatmap-cell level-2" style="width: 10px; height: 10px;"></div>
+          <div class="heatmap-cell level-3" style="width: 10px; height: 10px;"></div>
+          <div class="heatmap-cell level-4" style="width: 10px; height: 10px;"></div>
+        </div>
+        <span>More</span>
+      </div>
+    </div>
+
+    <!-- Topic Mastery Radar -->
+    <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+      <h3 style="font-size: 1.05rem; font-weight: 700; width: 100%; margin-bottom: 0.5rem;">🎯 Topic Mastery</h3>
+      <div style="width: 100%; max-height: 220px; position: relative;">
+        <canvas id="topicRadarChart"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Section: Quick Practice & Recent Submissions -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+    
+    <!-- Quick Contests & Workouts -->
+    <div class="card">
+      <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem;">⚡ Quick Challenge Workouts</h3>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        
+        <a href="/contest/div1-mock" class="card" style="background-color: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; padding: 0.85rem; border-color: var(--border-color); text-decoration: none;">
+          <div>
+            <div style="font-weight: 700; color: #79c0ff;">Division 1 Official Mock (45 Min)</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">40 Questions • Target: First-year Physics</div>
+          </div>
+          <span class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Start →</span>
+        </a>
+
+        <a href="/contest/div2-mock" class="card" style="background-color: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; padding: 0.85rem; border-color: var(--border-color); text-decoration: none;">
+          <div>
+            <div style="font-weight: 700; color: #d2a8ff;">Division 2 Advanced Mock (45 Min)</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">40 Questions • Rotational, Thermo, E&M, Modern</div>
+          </div>
+          <span class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Start →</span>
+        </a>
+
+        <a href="/contest/sprint-drill" class="card" style="background-color: var(--bg-tertiary); display: flex; justify-content: space-between; align-items: center; padding: 0.85rem; border-color: var(--border-color); text-decoration: none;">
+          <div>
+            <div style="font-weight: 700; color: #3fb950;">Rapid Fire Sprint (12 Min)</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">10 High-frequency questions • Speed drilling</div>
+          </div>
+          <span class="btn btn-secondary" style="padding: 0.3rem 0.7rem; font-size: 0.8rem;">Start →</span>
+        </a>
+
+      </div>
+    </div>
+
+    <!-- Recent Submissions -->
+    <div class="card">
+      <h3 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem;">🕒 Recent Practice Submissions</h3>
+      {% if recent_submissions %}
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          {% for sub in recent_submissions %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.8rem; background-color: var(--bg-tertiary); border-radius: 6px; font-size: 0.875rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                {% if sub.is_correct %}
+                  <span style="color: #3fb950; font-weight: bold;">✓</span>
+                {% else %}
+                  <span style="color: #ff7b72; font-weight: bold;">✕</span>
+                {% endif %}
+                <a href="/problems/{{ sub.question_id }}" style="font-weight: 600;">{{ sub.title }}</a>
+              </div>
+              <div style="color: var(--text-secondary); font-size: 0.8rem;">
+                {{ sub.created_at.split(' ')[0] if ' ' in sub.created_at else sub.created_at }}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div style="text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem;">
+          No submissions yet! Click <strong>Start Practice</strong> to solve your first PhysicsBowl problem.
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/analytics.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const topicData = {{ topic_map_json | safe }};
+    initTopicRadarChart(topicData);
+  });
+</script>
+{% endblock %}

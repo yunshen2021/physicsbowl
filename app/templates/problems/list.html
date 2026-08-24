@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Problems | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Header with Summary Stats -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h1 style="font-size: 1.6rem; font-weight: 800;">📚 PhysicsBowl Problem Set</h1>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        Solved {{ solved_count }} of {{ total_count }} problems ({{ ((solved_count / (total_count or 1)) * 100) | round(1) }}%)
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <button class="btn btn-primary" onclick="jumpToRandomProblem()">🎲 Pick Random</button>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="/problems" class="filter-bar">
+    
+    <!-- Division Filter Tabs -->
+    <select name="division" class="filter-select" onchange="this.form.submit()">
+      <option value="all" {% if current_division == 'all' %}selected{% endif %}>All Divisions</option>
+      <option value="1" {% if current_division == '1' %}selected{% endif %}>Division 1 (1st Year)</option>
+      <option value="2" {% if current_division == '2' %}selected{% endif %}>Division 2 (Advanced)</option>
+    </select>
+
+    <!-- Topic Filter -->
+    <select name="topic" class="filter-select" onchange="this.form.submit()">
+      <option value="all" {% if current_topic == 'all' %}selected{% endif %}>All Topics</option>
+      {% for t in topics %}
+        <option value="{{ t }}" {% if current_topic == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+
+    <!-- Difficulty Filter -->
+    <select name="difficulty" class="filter-select" onchange="this.form.submit()">
+      <option value="all" {% if current_difficulty == 'all' %}selected{% endif %}>All Difficulties</option>
+      <option value="easy" {% if current_difficulty == 'easy' %}selected{% endif %}>Easy</option>
+      <option value="medium" {% if current_difficulty == 'medium' %}selected{% endif %}>Medium</option>
+      <option value="hard" {% if current_difficulty == 'hard' %}selected{% endif %}>Hard</option>
+    </select>
+
+    <!-- Status Filter -->
+    <select name="status" class="filter-select" onchange="this.form.submit()">
+      <option value="all" {% if current_status == 'all' %}selected{% endif %}>All Statuses</option>
+      <option value="solved" {% if current_status == 'solved' %}selected{% endif %}>Solved</option>
+      <option value="attempted" {% if current_status == 'attempted' %}selected{% endif %}>Attempted</option>
+      <option value="unsolved" {% if current_status == 'unsolved' %}selected{% endif %}>Todo</option>
+    </select>
+
+    <!-- Search Input -->
+    <div style="display: flex; gap: 0.4rem; flex: 1; min-width: 200px;">
+      <input type="text" name="search" class="search-input" style="flex: 1;" placeholder="Search by topic, question, or keyword..." value="{{ current_search }}">
+      <button type="submit" class="btn btn-secondary">Search</button>
+      {% if current_search or current_division != 'all' or current_topic != 'all' or current_difficulty != 'all' or current_status != 'all' %}
+        <a href="/problems" class="btn btn-secondary" title="Clear filters">✕</a>
+      {% endif %}
+    </div>
+
+  </form>
+
+  <!-- Problem Table -->
+  <table class="problems-table">
+    <thead>
+      <tr>
+        <th style="width: 50px; text-align: center;">Status</th>
+        <th>Title</th>
+        <th style="width: 140px;">Topic</th>
+        <th style="width: 100px;">Division</th>
+        <th style="width: 110px;">Difficulty</th>
+        <th style="width: 100px; text-align: right;">Acceptance</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in problems %}
+        <tr>
+          <!-- Status Icon -->
+          <td style="text-align: center;">
+            {% if p.user_status == 'solved' %}
+              <span style="color: #3fb950; font-size: 1.1rem; font-weight: bold;" title="Solved">✓</span>
+            {% elif p.user_status == 'attempted' %}
+              <span style="color: #d29922; font-size: 0.9rem;" title="Attempted">⏳</span>
+            {% else %}
+              <span style="color: var(--text-muted); font-size: 0.9rem;" title="Unsolved">○</span>
+            {% endif %}
+          </td>
+
+          <!-- Title & Bookmark -->
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              {% if p.is_bookmarked %}
+                <span style="color: #d29922;" title="Bookmarked">★</span>
+              {% endif %}
+              <a href="/problems/{{ p.id }}" style="font-weight: 600; font-size: 0.95rem;">
+                {{ loop.index }}. {{ p.title }}
+              </a>
+            </div>
+          </td>
+
+          <!-- Topic Tag -->
+          <td>
+            <span class="badge badge-topic">{{ p.topic }}</span>
+          </td>
+
+          <!-- Division Badge -->
+          <td>
+            {% if p.division == 1 %}
+              <span class="badge badge-div1">Div 1</span>
+            {% elif p.division == 2 %}
+              <span class="badge badge-div2">Div 2</span>
+            {% else %}
+              <span class="badge badge-topic">Both</span>
+            {% endif %}
+          </td>
+
+          <!-- Difficulty Badge -->
+          <td>
+            {% if p.difficulty == 'Easy' %}
+              <span class="badge badge-easy">Easy</span>
+            {% elif p.difficulty == 'Medium' %}
+              <span class="badge badge-medium">Medium</span>
+            {% else %}
+              <span class="badge badge-hard">Hard</span>
+            {% endif %}
+          </td>
+
+          <!-- Acceptance Rate -->
+          <td style="text-align: right; color: var(--text-secondary); font-size: 0.85rem;">
+            {{ p.acceptance_rate }}
+          </td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 2.5rem; color: var(--text-secondary);">
+            No problems found matching the selected filters. <br>
+            <a href="/problems" style="margin-top: 0.5rem; display: inline-block;">Clear all filters</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+</div>
+{% endblock %}

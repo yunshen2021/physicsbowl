@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PhysicsBowl Arena | PhysCode{% endblock %}</title>
+  
+  <!-- LeetCode Dark Theme CSS -->
+  <link rel="stylesheet" href="/static/css/leetcode-dark.css">
+  
+  <!-- KaTeX CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  
+  <!-- KaTeX JS & Auto-render -->
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body, { delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}], throwOnError: false });"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <a href="/" class="nav-brand">
+        <span class="brand-badge">PhysCode</span>
+        <span>PhysicsBowl Arena</span>
+      </a>
+    </div>
+
+    <nav class="nav-links">
+      <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">📊 Dashboard</a>
+      <a href="/problems" class="nav-link {% if '/problems' in request.url.path %}active{% endif %}">📚 Problem Set</a>
+      <a href="/contest" class="nav-link {% if '/contest' in request.url.path %}active{% endif %}">⏱️ Mock Contest</a>
+      <a href="/formulas" class="nav-link {% if '/formulas' in request.url.path %}active{% endif %}">📑 Formula Sheet</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button class="btn-drawer-toggle" onclick="toggleFormulaDrawer()">
+        ⚡ AAPT Constants
+      </button>
+      <button class="btn btn-secondary" onclick="jumpToRandomProblem()" title="Pick a random problem">
+        🎲 Random
+      </button>
+      <div class="btn-streak" title="Daily Practice Streak">
+        🔥 <span id="nav-streak-val">Active</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Body -->
+  <main style="flex: 1;">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Slide-out AAPT Reference Sheet & Constants Drawer -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="toggleFormulaDrawer()"></div>
+  <aside class="formula-drawer" id="formula-drawer">
+    <div class="drawer-header">
+      <h3 style="font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+        ⚡ AAPT Physics Constants & Equations
+      </h3>
+      <button class="btn btn-secondary" style="padding: 0.2rem 0.6rem;" onclick="toggleFormulaDrawer()">✕</button>
+    </div>
+    <div class="drawer-body">
+      <div style="margin-bottom: 1rem;">
+        <input type="text" id="constant-search" class="search-input" style="width: 100%;" placeholder="Search constant or formula (e.g. Planck, c, gravity)..." oninput="filterDrawerConstants(this.value)">
+      </div>
+
+      <h4 style="color: var(--accent-blue); font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Key Physical Constants</h4>
+      <div id="drawer-constants-list" style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Speed of light ($c$)</span>
+            <span>$3.00 \times 10^8\text{ m/s}$</span>
+          </div>
+        </div>
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Planck constant ($h$)</span>
+            <span>$6.63 \times 10^{-34}\text{ J}\cdot\text{s}$</span>
+          </div>
+        </div>
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Gravitational constant ($G$)</span>
+            <span>$6.67 \times 10^{-11}\text{ N}\cdot\text{m}^2/\text{kg}^2$</span>
+          </div>
+        </div>
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Elementary charge ($e$)</span>
+            <span>$1.60 \times 10^{-19}\text{ C}$</span>
+          </div>
+        </div>
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Permittivity ($\epsilon_0$)</span>
+            <span>$8.85 \times 10^{-12}\text{ C}^2/(\text{N}\cdot\text{m}^2)$</span>
+          </div>
+        </div>
+        <div class="card constant-item" style="padding: 0.6rem 0.8rem; font-size: 0.85rem;">
+          <div style="display: flex; justify-content: space-between; font-weight: 600;">
+            <span>Boltzmann constant ($k_B$)</span>
+            <span>$1.38 \times 10^{-23}\text{ J/K}$</span>
+          </div>
+        </div>
+      </div>
+
+      <h4 style="color: var(--accent-yellow); font-size: 0.9rem; margin-bottom: 0.5rem; text-transform: uppercase;">Quick Mechanics Formulas</h4>
+      <div style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+        <div class="card" style="padding: 0.6rem 0.8rem;">
+          <div>$v = v_0 + at, \quad x = x_0 + v_0 t + \frac{1}{2}at^2$</div>
+        </div>
+        <div class="card" style="padding: 0.6rem 0.8rem;">
+          <div>$\vec{F}_{\text{net}} = m\vec{a}, \quad W = \Delta K = \frac{1}{2}mv^2$</div>
+        </div>
+        <div class="card" style="padding: 0.6rem 0.8rem;">
+          <div>$a_{\text{rolling}} = \frac{g\sin\theta}{1 + I/(MR^2)}$</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; text-align: center;">
+        <a href="/formulas" class="btn btn-secondary" style="width: 100%;">View Full Formula Sheet →</a>
+      </div>
+    </div>
+  </aside>
+
+  <script>
+    function toggleFormulaDrawer() {
+      const drawer = document.getElementById("formula-drawer");
+      const overlay = document.getElementById("drawer-overlay");
+      if (!drawer) return;
+      drawer.classList.toggle("open");
+      if (overlay) overlay.classList.toggle("open");
+      if (window.renderMathInElement) {
+        renderMathInElement(drawer, {
+          delimiters: [{left: "$$", right: "$$", display: true}, {left: "$", right: "$", display: false}],
+          throwOnError: false
+        });
+      }
+    }
+
+    function filterDrawerConstants(query) {
+      const items = document.querySelectorAll(".constant-item");
+      const q = query.toLowerCase();
+      items.forEach(item => {
+        if (item.textContent.toLowerCase().includes(q)) {
+          item.style.display = "block";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    }
+
+    async function jumpToRandomProblem() {
+      try {
+        const res = await fetch("/api/problems/random");
+        const data = await res.json();
+        if (data.problem_id) {
+          window.location.href = `/problems/${data.problem_id}`;
+        }
+      } catch (err) {
+        window.location.href = "/problems";
+      }
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

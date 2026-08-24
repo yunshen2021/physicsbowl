@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Mock Contests | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Header -->
+  <div style="margin-bottom: 2rem;">
+    <h1 style="font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+      ⏱️ AAPT PhysicsBowl Mock Contest Hub
+    </h1>
+    <p style="color: var(--text-secondary); margin-top: 0.25rem;">
+      Simulate the official 45-minute AAPT competition under real exam time pressure with instant scoring and percentile estimation.
+    </p>
+  </div>
+
+  <!-- Contest Presets Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 2.5rem;">
+    
+    <!-- Division 1 Mock -->
+    <div class="card" style="border-top: 4px solid #58a6ff; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span class="badge badge-div1">Division 1</span>
+          <span style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600;">⏱️ 45 Minutes</span>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">PhysicsBowl Division 1</h2>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+          For students in their first year of high school physics. Covers kinematics, dynamics, conservation laws, introductory E&M, and geometric optics.
+        </p>
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+          • 40 Multiple Choice Questions (A–E)<br>
+          • 1 point per correct answer, 0 for incorrect/blank<br>
+          • Official AAPT Formula Sheet accessible
+        </div>
+      </div>
+      <div style="margin-top: 1.5rem;">
+        <a href="/contest/div1-mock" class="btn btn-primary" style="width: 100%;">Start Division 1 Exam →</a>
+      </div>
+    </div>
+
+    <!-- Division 2 Mock -->
+    <div class="card" style="border-top: 4px solid #bc8cff; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span class="badge badge-div2">Division 2</span>
+          <span style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600;">⏱️ 45 Minutes</span>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">PhysicsBowl Division 2</h2>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+          For advanced or second-year physics students (AP Physics C / IB HL). Includes rotational dynamics, thermodynamics, relativity, quantum, and atomic physics.
+        </p>
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+          • 40 Advanced Competition Problems<br>
+          • Includes modern physics & relativistic mechanics<br>
+          • Detailed diagnostic topic scorecard
+        </div>
+      </div>
+      <div style="margin-top: 1.5rem;">
+        <a href="/contest/div2-mock" class="btn btn-blue" style="width: 100%;">Start Division 2 Exam →</a>
+      </div>
+    </div>
+
+    <!-- Rapid Fire Sprint -->
+    <div class="card" style="border-top: 4px solid #3fb950; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span class="badge badge-easy">Speed Drill</span>
+          <span style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600;">⏱️ 12 Minutes</span>
+        </div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Rapid Fire Sprint</h2>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+          A short 10-question high-intensity sprint designed to drill formula recall and quick calculation skills before an exam.
+        </p>
+        <div style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary);">
+          • 10 High-Yield PhysicsBowl Questions<br>
+          • Great for daily warmups & quick pacing tests
+        </div>
+      </div>
+      <div style="margin-top: 1.5rem;">
+        <a href="/contest/sprint-drill" class="btn btn-secondary" style="width: 100%;">Start 12-Min Sprint →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Past Contest Sessions -->
+  <div class="card">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">📜 Your Past Exam Attempts</h3>
+    {% if recent_contests %}
+      <table class="problems-table">
+        <thead>
+          <tr>
+            <th>Contest Name</th>
+            <th>Division</th>
+            <th>Score</th>
+            <th>Time Spent</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in recent_contests %}
+            <tr>
+              <td style="font-weight: 600;">{{ c.title }}</td>
+              <td>
+                <span class="badge {% if c.division == 1 %}badge-div1{% else %}badge-div2{% endif %}">
+                  Div {{ c.division }}
+                </span>
+              </td>
+              <td style="font-weight: 700; color: #3fb950;">
+                {{ c.score }} / {{ c.total_questions }} ({{ ((c.score / (c.total_questions or 1)) * 100) | round(1) }}%)
+              </td>
+              <td style="color: var(--text-secondary);">
+                {{ (c.time_taken_seconds // 60) }}m {{ (c.time_taken_seconds % 60) }}s
+              </td>
+              <td style="color: var(--text-secondary); font-size: 0.85rem;">
+                {{ c.created_at.split(' ')[0] if ' ' in c.created_at else c.created_at }}
+              </td>
+              <td>
+                <a href="/contest/results/{{ c.id }}" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">
+                  View Scorecard →
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+        No completed contest sessions yet. Choose a division above to begin!
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

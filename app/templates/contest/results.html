@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Contest Results | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <!-- Header -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="badge {% if session.division == 1 %}badge-div1{% else %}badge-div2{% endif %}" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+        Division {{ session.division }} Scorecard
+      </span>
+      <h1 style="font-size: 1.8rem; font-weight: 800;">{{ session.title }}</h1>
+      <p style="color: var(--text-secondary); font-size: 0.9rem;">
+        Completed on {{ session.created_at }} • Total Time: {{ (session.time_taken_seconds // 60) }}m {{ (session.time_taken_seconds % 60) }}s
+      </p>
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      <a href="/contest" class="btn btn-secondary">← Contests Hub</a>
+      <a href="/problems" class="btn btn-primary">Practice Weak Areas</a>
+    </div>
+  </div>
+
+  <!-- Score Summary Grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    
+    <!-- Score Card -->
+    <div class="card" style="text-align: center; padding: 1.5rem;">
+      <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Final Score</div>
+      <div style="font-size: 2.5rem; font-weight: 800; color: #3fb950; margin: 0.25rem 0;">
+        {{ session.score }} <span style="font-size: 1.2rem; color: var(--text-secondary);">/ {{ session.total_questions }}</span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary);">
+        Accuracy: {{ ((session.score / (session.total_questions or 1)) * 100) | round(1) }}%
+      </div>
+    </div>
+
+    <!-- Percentile Card -->
+    <div class="card" style="text-align: center; padding: 1.5rem;">
+      <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Est. National Percentile</div>
+      <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-yellow); margin: 0.25rem 0;">
+        {{ percentile }}th
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary);">
+        Based on AAPT historical scoring distributions
+      </div>
+    </div>
+
+    <!-- Pacing Card -->
+    <div class="card" style="text-align: center; padding: 1.5rem;">
+      <div style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700;">Average Pacing</div>
+      <div style="font-size: 2.5rem; font-weight: 800; color: var(--accent-blue); margin: 0.25rem 0;">
+        {{ (session.time_taken_seconds // (session.total_questions or 1)) }}s
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary);">
+        Target: ~67 seconds per question
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Topic Mastery Breakdown -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem;">📊 Physics Domain Diagnostics</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+      {% for topic, stats in topic_stats.items() %}
+        <div>
+          <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: 600; margin-bottom: 0.4rem;">
+            <span>{{ topic }}</span>
+            <span style="color: {% if stats.correct == stats.total %}#3fb950{% elif stats.correct > 0 %}#e3b341{% else %}#ff7b72{% endif %};">
+              {{ stats.correct }} / {{ stats.total }} ({{ ((stats.correct / (stats.total or 1)) * 100) | round(0) | int }}%)
+            </span>
+          </div>
+          <div style="width: 100%; height: 8px; background-color: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+            <div style="width: {{ (stats.correct / (stats.total or 1)) * 100 }}%; height: 100%; background-color: {% if stats.correct == stats.total %}#2ea043{% elif stats.correct > 0 %}#d29922{% else %}#f85149{% endif %};"></div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Detailed Question-by-Question Review -->
+  <div class="card">
+    <h3 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">🔍 Question-by-Question Review</h3>
+    
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      {% for item in details %}
+        <div class="card" style="background-color: var(--bg-tertiary); border-left: 4px solid {% if item.is_correct %}#2ea043{% else %}#f85149{% endif %};">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="font-weight: 700; font-size: 1rem;">
+              Q{{ loop.index }}. <a href="/problems/{{ item.question_id }}">{{ item.title }}</a>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span class="badge badge-topic">{{ item.topic }}</span>
+              {% if item.is_correct %}
+                <span class="badge badge-easy">✓ Correct ({{ item.selected_option }})</span>
+              {% else %}
+                <span class="badge badge-hard">✕ Incorrect (Chosen: {{ item.selected_option }}, Key: {{ item.correct_answer }})</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Solution Accordion -->
+          <details style="margin-top: 0.75rem; cursor: pointer;">
+            <summary style="font-size: 0.85rem; color: var(--accent-blue); font-weight: 600;">
+              📖 View Step-by-Step Derivation
+            </summary>
+            <div style="margin-top: 0.75rem; padding: 1rem; background-color: var(--bg-primary); border-radius: 6px;">
+              <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">{{ item.solution.summary }}</p>
+              <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.9rem;">
+                {% for step in item.solution.steps %}
+                  <div>{{ step }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </details>
+        </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.renderMathInElement) {
+      window.renderMathInElement(document.body, {
+        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+        throwOnError: false
+      });
+    }
+  });
+</script>
+{% endblock %}

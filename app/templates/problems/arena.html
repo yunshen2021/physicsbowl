@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}{{ question.title }} | PhysicsBowl Arena{% endblock %}
+
+{% block content %}
+<div class="arena-container">
+  
+  <!-- Left Panel: Problem Context, Hints, Notes & Solutions -->
+  <div class="arena-panel">
+    
+    <!-- Top Header -->
+    <div class="panel-header">
+      <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+        <span style="font-weight: 700; font-size: 0.95rem;">Q{{ problem_number }}. {{ question.title }}</span>
+        {% if question.difficulty == 'Easy' %}
+          <span class="badge badge-easy">Easy</span>
+        {% elif question.difficulty == 'Medium' %}
+          <span class="badge badge-medium">Medium</span>
+        {% else %}
+          <span class="badge badge-hard">Hard</span>
+        {% endif %}
+        {% if question.division == 1 %}
+          <span class="badge badge-div1">Div 1</span>
+        {% elif question.division == 2 %}
+          <span class="badge badge-div2">Div 2</span>
+        {% else %}
+          <span class="badge badge-topic">Both</span>
+        {% endif %}
+        <span class="badge badge-topic">{{ question.topic }}</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.4rem;">
+        <button id="btn-bookmark" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" onclick="toggleBookmark('{{ question.id }}')">
+          {% if is_bookmarked %}★ Bookmarked{% else %}☆ Bookmark{% endif %}
+        </button>
+        {% if prev_id %}
+          <a href="/problems/{{ prev_id }}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" title="Previous problem">◀</a>
+        {% endif %}
+        {% if next_id %}
+          <a href="/problems/{{ next_id }}" class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;" title="Next problem">▶</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Tab Buttons -->
+    <div style="padding: 0.4rem 1rem; background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); display: flex; gap: 0.5rem;">
+      <button class="panel-tab active" data-tab="desc" onclick="switchLeftTab('desc')">📝 Description</button>
+      <button class="panel-tab" data-tab="hints" onclick="switchLeftTab('hints')">💡 Hints ({{ question.hints | length }})</button>
+      <button class="panel-tab" data-tab="notes" onclick="switchLeftTab('notes')">✍️ Notes</button>
+      <button class="panel-tab" data-tab="solution" onclick="switchLeftTab('solution')">📖 Solution</button>
+    </div>
+
+    <!-- Tab Panes -->
+    <div class="panel-body">
+      
+      <!-- 1. Description Tab -->
+      <div id="tab-desc" class="tab-pane">
+        <div style="font-size: 1.05rem; line-height: 1.7; margin-bottom: 1.5rem;" id="problem-content-rendered">
+          {{ question.content }}
+        </div>
+
+        {% if question.diagramSvg %}
+          <div class="card" style="background-color: var(--bg-primary); border-color: var(--border-color); margin-bottom: 1.5rem; text-align: center; padding: 1.5rem;">
+            {{ question.diagramSvg | safe }}
+          </div>
+        {% endif %}
+
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem;">
+          <span style="font-size: 0.8rem; color: var(--text-secondary);">AAPT PhysicsBowl • {{ question.year }} • Acceptance: {{ question.acceptance_rate }}</span>
+        </div>
+
+        <!-- Inline Solution Accordion (Appears after submission or tab click) -->
+        <div id="solution-view" class="solution-section" style="display: {% if status == 'solved' %}block{% else %}none{% endif %};">
+          <h4 style="color: #3fb950; font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+            ✓ Official Step-by-Step Derivation
+          </h4>
+          <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+            {{ question.solution.summary }}
+          </p>
+
+          <div class="solution-steps">
+            {% for step in question.solution.steps %}
+              <div class="card" style="background-color: var(--bg-secondary); padding: 0.75rem 1rem; font-size: 0.95rem;">
+                {{ step }}
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if question.solution.formulasUsed %}
+            <div style="margin-top: 1rem;">
+              <div style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem;">Key Formulas Used:</div>
+              <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                {% for f in question.solution.formulasUsed %}
+                  <div style="background-color: var(--bg-secondary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                    $${{ f }}$$
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+
+          <div style="margin-top: 1rem; padding: 0.75rem; background-color: rgba(88, 166, 255, 0.1); border-left: 3px solid var(--accent-blue); border-radius: 4px; font-size: 0.9rem;">
+            <strong>💡 Physics Key Takeaway:</strong> {{ question.solution.keyTakeaway }}
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 2. Hints Tab -->
+      <div id="tab-hints" class="tab-pane" style="display: none;">
+        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.75rem;">Progressive Hints</h4>
+        {% if question.hints %}
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for hint in question.hints %}
+              <details class="card" style="background-color: var(--bg-tertiary); cursor: pointer;">
+                <summary style="font-weight: 600; color: var(--accent-yellow); font-size: 0.9rem;">
+                  Hint {{ loop.index }}
+                </summary>
+                <div style="margin-top: 0.6rem; font-size: 0.95rem; color: var(--text-primary);">
+                  {{ hint }}
+                </div>
+              </details>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: var(--text-secondary);">No hints available for this question.</p>
+        {% endif %}
+      </div>
+
+      <!-- 3. Notes Tab -->
+      <div id="tab-notes" class="tab-pane" style="display: none;">
+        <h4 style="font-size: 1rem; font-weight: 700; margin-bottom: 0.5rem;">Personal Notes & Scratch Work</h4>
+        <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">Auto-saves as you type.</p>
+        <textarea id="notes-textarea" class="search-input" style="width: 100%; height: 240px; font-family: monospace; font-size: 0.9rem; line-height: 1.5;" placeholder="Write formulas, notes, or test strategies for this problem...">{{ user_note }}</textarea>
+      </div>
+
+      <!-- 4. Solution Tab -->
+      <div id="tab-solution" class="tab-pane" style="display: none;">
+        <h4 style="color: #3fb950; font-size: 1.05rem; font-weight: 700; margin-bottom: 0.5rem;">
+          📖 Official AAPT Physics Solution
+        </h4>
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+          {{ question.solution.summary }}
+        </p>
+
+        <div class="solution-steps">
+          {% for step in question.solution.steps %}
+            <div class="card" style="background-color: var(--bg-primary); padding: 0.75rem 1rem; font-size: 0.95rem;">
+              {{ step }}
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if question.solution.formulasUsed %}
+          <div style="margin-top: 1rem;">
+            <div style="font-size: 0.85rem; color: var(--accent-yellow); font-weight: 600; text-transform: uppercase; margin-bottom: 0.3rem;">Formulas Applied:</div>
+            <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+              {% for f in question.solution.formulasUsed %}
+                <div style="background-color: var(--bg-primary); padding: 0.4rem 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                  $${{ f }}$$
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Right Panel: Option Selection, Whiteboard Scratchpad & Submission Workspace -->
+  <div class="arena-panel">
+    
+    <!-- Top Workspace Header -->
+    <div class="panel-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 600;">⏱️ TIME ELAPSED:</span>
+        <span id="stopwatch-display" style="font-family: monospace; font-weight: 700; font-size: 1.05rem; color: var(--accent-blue);">00:00</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <button class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="toggleScratchpad()">
+          🎨 Free-Body Diagram Board
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-body" style="display: flex; flex-direction: column; justify-content: space-between;">
+      
+      <div>
+        <!-- Multiple-choice Options A through E -->
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">
+          Select Your Answer (Press 1-5 or A-E):
+        </h4>
+
+        <div class="options-grid">
+          {% for opt in question.options %}
+            <div class="option-card" data-option="{{ opt.id }}">
+              <div class="option-letter">{{ opt.id }}</div>
+              <div class="option-text">{{ opt.text }}</div>
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">[{{ loop.index }}]</span>
+            </div>
+          {% endfor %}
+        </div>
+
+        <!-- Scratchpad Canvas Area (Collapsible) -->
+        <div id="scratchpad-drawer" style="display: none; margin-top: 1.25rem;" class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-weight: 600; font-size: 0.85rem;">✏️ Free-Body Diagram Canvas</span>
+            <div style="display: flex; gap: 0.3rem;">
+              <button class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" onclick="activeScratchpad.setColor('#58a6ff')">Blue</button>
+              <button class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" onclick="activeScratchpad.setColor('#f59e0b')">Yellow</button>
+              <button class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" onclick="activeScratchpad.setColor('#f85149')">Red</button>
+              <button class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" onclick="activeScratchpad.setEraser()">Eraser</button>
+              <button class="btn btn-secondary" style="padding: 0.15rem 0.4rem; font-size: 0.75rem;" onclick="activeScratchpad.clear()">Clear</button>
+            </div>
+          </div>
+          <div style="width: 100%; height: 180px; position: relative;">
+            <canvas id="scratchpad-canvas" style="width: 100%; height: 100%; border-radius: 4px;"></canvas>
+          </div>
+        </div>
+
+        <!-- Verdict Banners -->
+        <div id="verdict-accepted" class="verdict-box accepted">
+          <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem;">
+            🎉 Accepted! Correct Answer.
+          </div>
+          <p style="margin-top: 0.3rem; font-size: 0.9rem;">
+            Great job! You answered correctly. Check out the step-by-step solution derivation on the left panel.
+          </p>
+        </div>
+
+        <div id="verdict-wrong" class="verdict-box wrong">
+          <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem;">
+            ✕ Wrong Answer
+          </div>
+          <p id="wrong-explanation-text" style="margin-top: 0.3rem; font-size: 0.9rem;"></p>
+        </div>
+
+      </div>
+
+      <!-- Action Footer -->
+      <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.8rem; color: var(--text-secondary);">
+          Press <kbd style="background: var(--bg-tertiary); padding: 2px 5px; border-radius: 3px;">Enter</kbd> to submit
+        </div>
+
+        <button id="btn-submit-answer" class="btn btn-primary" style="padding: 0.6rem 1.75rem; font-size: 0.95rem;" onclick="submitAnswer()" disabled>
+          Submit Answer
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.PROBLEM_ID = "{{ question.id }}";
+  function toggleScratchpad() {
+    const el = document.getElementById("scratchpad-drawer");
+    if (!el) return;
+    if (el.style.display === "none") {
+      el.style.display = "block";
+      initScratchpad();
+    } else {
+      el.style.display = "none";
+    }
+  }
+</script>
+<script src="/static/js/scratchpad.js"></script>
+<script src="/static/js/arena.js"></script>
+{% endblock %}

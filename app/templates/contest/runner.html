@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}{{ preset.title }} | Timed Exam{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; height: calc(100vh - 65px);">
+  
+  <!-- Contest Exam Top Header -->
+  <div style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-color); padding: 0.6rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h2 style="font-size: 1.1rem; font-weight: 700;">{{ preset.title }}</h2>
+      <span style="font-size: 0.8rem; color: var(--text-secondary);">
+        Division {{ preset.division }} • Question <span id="current-q-num">1</span> of {{ questions | length }}
+      </span>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div style="display: flex; align-items: center; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 0.5rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); padding: 0.35rem 0.85rem; border-radius: 6px;">
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">⏱️ TIME REMAINING:</span>
+        <span id="contest-timer" style="font-family: monospace; font-size: 1.2rem; font-weight: 800; color: #3fb950;">45:00</span>
+      </div>
+
+      <button id="btn-flag-q" class="btn btn-secondary" onclick="toggleFlagCurrentQuestion()">
+        🚩 Flag for Review
+      </button>
+
+      <button class="btn btn-primary" onclick="confirmContestSubmit()">
+        Submit Exam ✓
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Exam Split Area -->
+  <div style="display: grid; grid-template-columns: 1fr 340px; flex: 1; overflow: hidden;">
+    
+    <!-- Left Area: Active Question & Choices -->
+    <div style="padding: 2rem; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <span id="q-topic-badge" class="badge badge-topic" style="font-size: 0.85rem;">Mechanics</span>
+          <span id="q-flag-indicator" style="display: none; color: var(--accent-yellow); font-weight: 600; font-size: 0.85rem;">🚩 Marked for review</span>
+        </div>
+
+        <!-- Problem Statement -->
+        <h3 id="q-title" style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;"></h3>
+        <div id="q-content" style="font-size: 1.05rem; line-height: 1.7; margin-bottom: 1.5rem;"></div>
+
+        <!-- Diagram -->
+        <div id="q-diagram-container" class="card" style="background-color: var(--bg-primary); text-align: center; margin-bottom: 1.5rem; display: none;"></div>
+
+        <!-- Choices A-E -->
+        <div class="options-grid" id="q-options-container"></div>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 2rem;">
+        <button id="btn-prev-q" class="btn btn-secondary" onclick="prevQuestion()">◀ Previous</button>
+        <div style="color: var(--text-secondary); font-size: 0.85rem;">
+          Select choice or press keys [1-5]
+        </div>
+        <button id="btn-next-q" class="btn btn-secondary" onclick="nextQuestion()">Next ▶</button>
+      </div>
+
+    </div>
+
+    <!-- Right Sidebar: Question Grid Navigator -->
+    <div style="background-color: var(--bg-secondary); border-left: 1px solid var(--border-color); padding: 1.25rem; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <h4 style="font-size: 0.9rem; font-weight: 700; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 1rem;">
+          Question Palette
+        </h4>
+
+        <!-- Legend -->
+        <div style="display: flex; gap: 0.75rem; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 1rem; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.25rem;">
+            <div style="width: 12px; height: 12px; background: #1b4728; border: 1px solid #2ea043; border-radius: 2px;"></div> Answered
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.25rem;">
+            <div style="width: 12px; height: 12px; background: #4d3800; border: 1px solid #d29922; border-radius: 2px;"></div> Flagged
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.25rem;">
+            <div style="width: 12px; height: 12px; background: var(--bg-tertiary); border: 1px solid var(--border-color); border-radius: 2px;"></div> Unvisited
+          </div>
+        </div>
+
+        <!-- 40-question grid -->
+        <div class="contest-grid-palette" id="question-palette-grid">
+          {% for q in questions %}
+            <button class="palette-btn" id="pal-btn-{{ loop.index0 }}" onclick="jumpToQuestion({{ loop.index0 }})">
+              {{ loop.index }}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+        <button class="btn btn-secondary" style="width: 100%; margin-bottom: 0.5rem;" onclick="toggleFormulaDrawer()">
+          ⚡ Open AAPT Formula Sheet
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/timer.js"></script>
+<script>
+  const QUESTIONS = {{ questions_json | safe }};
+  const DURATION_SECONDS = {{ duration_seconds }};
+  const SESSION_ID = "{{ session_id }}";
+  const CONTEST_TITLE = "{{ preset.title }}";
+  const DIVISION = {{ preset.division }};
+
+  let currentIndex = 0;
+  let userAnswers = {}; // question_id -> option
+  let flaggedQuestions = {}; // question_id -> bool
+  let startTime = Date.now();
+
+  document.addEventListener("DOMContentLoaded", () => {
+    initContestTimer(DURATION_SECONDS);
+    loadQuestion(0);
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", (e) => {
+      const key = e.key.toUpperCase();
+      const map = { "1": "A", "2": "B", "3": "C", "4": "D", "5": "E", "A": "A", "B": "B", "C": "C", "D": "D", "E": "E" };
+      if (map[key]) {
+        selectContestOption(map[key]);
+      } else if (e.key === "ArrowRight") {
+        nextQuestion();
+      } else if (e.key === "ArrowLeft") {
+        prevQuestion();
+      }
+    });
+  });
+
+  function loadQuestion(index) {
+    currentIndex = index;
+    const q = QUESTIONS[index];
+    if (!q) return;
+
+    document.getElementById("current-q-num").textContent = index + 1;
+    document.getElementById("q-topic-badge").textContent = q.topic || "General";
+    document.getElementById("q-title").textContent = `Q${index + 1}. ${q.title}`;
+    document.getElementById("q-content").innerHTML = q.content;
+
+    // Diagram
+    const diag = document.getElementById("q-diagram-container");
+    if (q.diagramSvg) {
+      diag.innerHTML = q.diagramSvg;
+      diag.style.display = "block";
+    } else {
+      diag.style.display = "none";
+    }
+
+    // Flag indicator
+    const isFlagged = flaggedQuestions[q.id] || false;
+    document.getElementById("q-flag-indicator").style.display = isFlagged ? "inline" : "none";
+    document.getElementById("btn-flag-q").textContent = isFlagged ? "🚩 Unflag Question" : "🚩 Flag for Review";
+
+    // Options
+    const optContainer = document.getElementById("q-options-container");
+    optContainer.innerHTML = "";
+
+    const chosen = userAnswers[q.id];
+    q.options.forEach((opt, idx) => {
+      const card = document.createElement("div");
+      card.className = `option-card ${chosen === opt.id ? 'selected' : ''}`;
+      card.innerHTML = `
+        <div class="option-letter">${opt.id}</div>
+        <div class="option-text">${opt.text}</div>
+        <span style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">[${idx + 1}]</span>
+      `;
+      card.onclick = () => selectContestOption(opt.id);
+      optContainer.appendChild(card);
+    });
+
+    // Update Palette active state
+    document.querySelectorAll(".palette-btn").forEach((btn, idx) => {
+      if (idx === index) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    // Prev / Next button states
+    document.getElementById("btn-prev-q").disabled = (index === 0);
+    document.getElementById("btn-next-q").disabled = (index === QUESTIONS.length - 1);
+
+    // Render KaTeX
+    if (window.renderMathInElement) {
+      window.renderMathInElement(document.body, {
+        delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}],
+        throwOnError: false
+      });
+    }
+  }
+
+  function selectContestOption(optId) {
+    const q = QUESTIONS[currentIndex];
+    userAnswers[q.id] = optId;
+
+    // Update option card style
+    document.querySelectorAll(".option-card").forEach(card => {
+      if (card.querySelector(".option-letter").textContent === optId) {
+        card.classList.add("selected");
+      } else {
+        card.classList.remove("selected");
+      }
+    });
+
+    // Update palette button
+    updatePaletteButton(currentIndex);
+  }
+
+  function toggleFlagCurrentQuestion() {
+    const q = QUESTIONS[currentIndex];
+    flaggedQuestions[q.id] = !flaggedQuestions[q.id];
+    const isFlagged = flaggedQuestions[q.id];
+    document.getElementById("q-flag-indicator").style.display = isFlagged ? "inline" : "none";
+    document.getElementById("btn-flag-q").textContent = isFlagged ? "🚩 Unflag Question" : "🚩 Flag for Review";
+    updatePaletteButton(currentIndex);
+  }
+
+  function updatePaletteButton(idx) {
+    const q = QUESTIONS[idx];
+    const btn = document.getElementById(`pal-btn-${idx}`);
+    if (!btn) return;
+
+    btn.className = "palette-btn";
+    if (idx === currentIndex) btn.classList.add("active");
+
+    if (flaggedQuestions[q.id]) {
+      btn.classList.add("flagged");
+    } else if (userAnswers[q.id]) {
+      btn.classList.add("answered");
+    }
+  }
+
+  function jumpToQuestion(idx) {
+    loadQuestion(idx);
+  }
+
+  function nextQuestion() {
+    if (currentIndex < QUESTIONS.length - 1) {
+      loadQuestion(currentIndex + 1);
+    }
+  }
+
+  function prevQuestion() {
+    if (currentIndex > 0) {
+      loadQuestion(currentIndex - 1);
+    }
+  }
+
+  function confirmContestSubmit() {
+    const answeredCount = Object.keys(userAnswers).length;
+    const totalCount = QUESTIONS.length;
+    const unans = totalCount - answeredCount;
+
+    let msg = `Are you sure you want to submit your exam?\n\n• Answered: ${answeredCount}/${totalCount}`;
+    if (unans > 0) {
+      msg += `\n• Unanswered: ${unans} question(s)`;
+    }
+
+    if (confirm(msg)) {
+      submitContestExam(false);
+    }
+  }
+
+  async function submitContestExam(isAuto) {
+    const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+    
+    // Fill any unanswered with empty
+    const completeAnswers = {};
+    QUESTIONS.forEach(q => {
+      completeAnswers[q.id] = userAnswers[q.id] || "UNANSWERED";
+    });
+
+    try {
+      const res = await fetch("/api/contest/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: SESSION_ID,
+          title: CONTEST_TITLE,
+          division: DIVISION,
+          answers: completeAnswers,
+          time_taken_seconds: elapsedSeconds
+        })
+      });
+
+      const data = await res.json();
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      }
+    } catch (err) {
+      console.error("Contest submit error:", err);
+      alert("Error submitting contest exam. Please try again.");
+    }
+  }
+</script>
+{% endblock %}
