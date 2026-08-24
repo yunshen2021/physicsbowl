@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
-from app.database import get_db, get_submission_history_daily, get_recent_contests, get_all_question_statuses
+from app.database import get_submission_history_daily, get_recent_contests, get_all_question_statuses, get_recent_submissions
 
 router = APIRouter()
 
@@ -90,21 +90,13 @@ async def dashboard(request: Request):
     recent_contests = get_recent_contests()
 
     # Recent submissions
-    with get_db() as conn:
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT id, question_id, selected_option, is_correct, time_spent_seconds, created_at
-            FROM submissions
-            ORDER BY created_at DESC
-            LIMIT 5
-        """)
-        raw_subs = cursor.fetchall()
-        recent_submissions = []
-        q_lookup = {q["id"]: q["title"] for q in all_q}
-        for s in raw_subs:
-            sub_dict = dict(s)
-            sub_dict["title"] = q_lookup.get(sub_dict["question_id"], sub_dict["question_id"])
-            recent_submissions.append(sub_dict)
+    raw_subs = get_recent_submissions(limit=5)
+    recent_submissions = []
+    q_lookup = {q["id"]: q["title"] for q in all_q}
+    for s in raw_subs:
+        sub_dict = dict(s)
+        sub_dict["title"] = q_lookup.get(sub_dict["question_id"], sub_dict["question_id"])
+        recent_submissions.append(sub_dict)
 
     # Years breakdown
     years_data = []

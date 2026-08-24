@@ -1,20 +1,25 @@
-import sqlite3
 import os
-from datetime import datetime, date
+import psycopg2
+import psycopg2.extras
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "physicsbowl.db")
+DATABASE_URL = os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL")
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
     return conn
+
+def _stringify_created_at(rows):
+    for r in rows:
+        if r.get("created_at") is not None:
+            r["created_at"] = r["created_at"].strftime("%Y-%m-%d %H:%M:%S")
+    return rows
 
 def init_db():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS submissions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 question_id TEXT NOT NULL,
                 selected_option TEXT NOT NULL,
                 is_correct BOOLEAN NOT NULL,
@@ -54,7 +59,7 @@ def record_submission(question_id: str, selected_option: str, is_correct: bool, 
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO submissions (question_id, selected_option, is_correct, time_spent_seconds)
-            VALUES (?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s)
         """, (question_id, selected_option, is_correct, time_spent_seconds))
         conn.commit()
 
@@ -63,7 +68,7 @@ def get_question_status(question_id: str):
         cursor = conn.cursor()
         cursor.execute("""
             SELECT is_correct FROM submissions
-            WHERE question_id = ?
+            WHERE question_id = %s
             ORDER BY created_at DESC
         """, (question_id,))
         rows = cursor.fetchall()
@@ -77,7 +82,7 @@ def get_all_question_statuses():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT question_id, MAX(is_correct) as has_solved, COUNT(id) as attempts
+            SELECT question_id, MAX(is_correct::int) as has_solved, COUNT(id) as attempts
             FROM submissions
             GROUP BY question_id
         """)
@@ -93,21 +98,21 @@ def get_all_question_statuses():
 def toggle_bookmark(question_id: str) -> bool:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT question_id FROM bookmarks WHERE question_id = ?", (question_id,))
+        cursor.execute("SELECT question_id FROM bookmarks WHERE question_id = %s", (question_id,))
         exists = cursor.fetchone()
         if exists:
-            cursor.execute("DELETE FROM bookmarks WHERE question_id = ?", (question_id,))
+            cursor.execute("DELETE FROM bookmarks WHERE question_id = %s", (question_id,))
             conn.commit()
             return False
         else:
-            cursor.execute("INSERT INTO bookmarks (question_id) VALUES (?)", (question_id,))
+            cursor.execute("INSERT INTO bookmarks (question_id) VALUES (%s)", (question_id,))
             conn.commit()
             return True
 
 def is_bookmarked(question_id: str) -> bool:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT question_id FROM bookmarks WHERE question_id = ?", (question_id,))
+        cursor.execute("SELECT question_id FROM bookmarks WHERE question_id = %s", (question_id,))
         return cursor.fetchone() is not None
 
 def save_note(question_id: str, content: str):
@@ -115,9 +120,9 @@ def save_note(question_id: str, content: str):
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO question_notes (question_id, note_content, updated_at)
-            VALUES (?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(question_id) DO UPDATE SET
-                note_content = excluded.note_content,
+            VALUES (%s, %s, CURRENT_TIMESTAMP)
+            ON CONFLICT (question_id) DO UPDATE SET
+                note_content = EXCLUDED.note_content,
                 updated_at = CURRENT_TIMESTAMP
         """, (question_id, content))
         conn.commit()
@@ -125,7 +130,7 @@ def save_note(question_id: str, content: str):
 def get_note(question_id: str) -> str:
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT note_content FROM question_notes WHERE question_id = ?", (question_id,))
+        cursor.execute("SELECT note_content FROM question_notes WHERE question_id = %s", (question_id,))
         row = cursor.fetchone()
         return row["note_content"] if row else ""
 
@@ -133,31 +138,55 @@ def save_contest_result(session_id: str, title: str, division: int, score: int, 
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            INSERT OR REPLACE INTO contest_sessions (id, title, division, score, total_questions, time_taken_seconds, answers_json)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO contest_sessions (id, title, division, score, total_questions, time_taken_seconds, answers_json)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                division = EXCLUDED.division,
+                score = EXCLUDED.score,
+                total_questions = EXCLUDED.total_questions,
+                time_taken_seconds = EXCLUDED.time_taken_seconds,
+                answers_json = EXCLUDED.answers_json
         """, (session_id, title, division, score, total, time_taken, answers_json))
         conn.commit()
 
 def get_contest_result(session_id: str):
     with get_db() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM contest_sessions WHERE id = ?", (session_id,))
-        return cursor.fetchone()
+        cursor.execute("SELECT * FROM contest_sessions WHERE id = %s", (session_id,))
+        row = cursor.fetchone()
+        if row:
+            _stringify_created_at([row])
+        return row
 
 def get_recent_contests():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM contest_sessions ORDER BY created_at DESC LIMIT 10")
-        return cursor.fetchall()
+        return _stringify_created_at(cursor.fetchall())
+
+def get_recent_submissions(limit: int = 5):
+    with get_db() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, question_id, selected_option, is_correct, time_spent_seconds, created_at
+            FROM submissions
+            ORDER BY created_at DESC
+            LIMIT %s
+        """, (limit,))
+        return _stringify_created_at(cursor.fetchall())
 
 def get_submission_history_daily():
     with get_db() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT date(created_at) as sub_date, COUNT(id) as count, SUM(is_correct) as correct_count
+            SELECT created_at::date as sub_date, COUNT(id) as count, SUM(is_correct::int) as correct_count
             FROM submissions
-            GROUP BY date(created_at)
+            GROUP BY sub_date
             ORDER BY sub_date DESC
             LIMIT 365
         """)
-        return cursor.fetchall()
+        rows = cursor.fetchall()
+        for r in rows:
+            r["sub_date"] = str(r["sub_date"])
+        return rows

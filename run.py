@@ -24,9 +24,9 @@ def main():
     print(" ⚡ PhysicsBowl Arena (PhysCode) - AAPT Competition Training")
     print("=" * 65)
     
-    # 1. Initialize SQLite Database
+    # 1. Initialize Postgres schema (tables created if missing)
     init_db()
-    print("✓ SQLite database initialized at app/physicsbowl.db")
+    print("✓ Database schema initialized")
 
     # 2. Launch browser automatically in background
     threading.Thread(target=open_browser, daemon=True).start()
