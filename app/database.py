@@ -4,9 +4,13 @@ import psycopg2.extras
 
 DATABASE_URL = os.environ.get("POSTGRES_URL") or os.environ.get("DATABASE_URL")
 
+_connection = None
+
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
-    return conn
+    global _connection
+    if _connection is None or _connection.closed:
+        _connection = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.RealDictCursor)
+    return _connection
 
 def _stringify_created_at(rows):
     for r in rows:
