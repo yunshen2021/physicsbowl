@@ -2,6 +2,7 @@ import json
 import os
 import uuid
 import re
+import random
 from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -68,7 +69,7 @@ async def contest_hub(request: Request):
     all_q = load_questions()
     years = sorted(list(set(q.get("year", 2025) for q in all_q if q.get("year"))), reverse=True)
     recent_contests = get_recent_contests()
-    
+
     # Build list of official contests by year
     official_contests = []
     for y in years:
@@ -84,6 +85,13 @@ async def contest_hub(request: Request):
             "div2_count": min(40, div2_count)
         })
 
+    # Build topic counts for the "Practice by Topic" picker
+    topic_counts = {}
+    for q in all_q:
+        t = q.get("topic", "General")
+        topic_counts[t] = topic_counts.get(t, 0) + 1
+    topics = sorted(topic_counts.keys())
+
     return templates.TemplateResponse(
         request=request,
         name="contest/hub.html",
@@ -91,7 +99,44 @@ async def contest_hub(request: Request):
             "presets": CONTEST_PRESETS,
             "official_contests": official_contests,
             "years": years,
-            "recent_contests": recent_contests
+            "recent_contests": recent_contests,
+            "topics": topics,
+            "topic_counts": topic_counts
+        }
+    )
+
+@router.get("/contest/practice/topic", response_class=HTMLResponse)
+async def topic_practice(request: Request, topic: str, count: int = 15):
+    all_q = load_questions()
+    matching_q = [q for q in all_q if q.get("topic", "").lower() == topic.lower()]
+    if not matching_q:
+        raise HTTPException(status_code=404, detail=f"No questions found for topic '{topic}'")
+
+    count = max(5, min(count, len(matching_q)))
+    contest_q = random.sample(matching_q, count)
+
+    preset = {
+        "id": f"topic-{topic}",
+        "title": f"Topic Practice: {topic}",
+        "division": 1,
+        "description": f"Focused practice session covering {topic} problems pulled from past AAPT PhysicsBowl exams.",
+        "duration_minutes": max(10, round(count * 1.2)),
+        "question_count": count
+    }
+
+    formulas_data = load_formulas()
+    session_id = str(uuid.uuid4())
+
+    return templates.TemplateResponse(
+        request=request,
+        name="contest/runner.html",
+        context={
+            "preset": preset,
+            "questions": contest_q,
+            "questions_json": json.dumps(contest_q),
+            "formulas_data": formulas_data,
+            "session_id": session_id,
+            "duration_seconds": preset["duration_minutes"] * 60
         }
     )
 

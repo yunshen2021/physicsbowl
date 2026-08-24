@@ -85,6 +85,36 @@
 
   </div>
 
+  <!-- Practice by Topic -->
+  <div id="topic-practice" class="card" style="margin-bottom: 2.5rem; border-top: 4px solid #d29922;">
+    <h3 style="font-size: 1.2rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem;">
+      🎯 Practice by Topic
+    </h3>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">
+      Pick a topic to drill and we'll build an untimed-scored practice set from every matching question in the archive.
+    </p>
+    <form action="/contest/practice/topic" method="get" style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: flex-end;">
+      <div style="flex: 1; min-width: 220px;">
+        <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; text-transform: uppercase; font-weight: 600;">Topic</label>
+        <select name="topic" class="filter-select" style="width: 100%;">
+          {% for t in topics %}
+            <option value="{{ t }}">{{ t }} ({{ topic_counts[t] }})</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div style="width: 140px;">
+        <label style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.3rem; text-transform: uppercase; font-weight: 600;"># Questions</label>
+        <select name="count" class="filter-select" style="width: 100%;">
+          <option value="10">10</option>
+          <option value="15" selected>15</option>
+          <option value="20">20</option>
+          <option value="30">30</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-secondary" style="height: 38px;">Start Topic Practice →</button>
+    </form>
+  </div>
+
   <!-- Official AAPT Past Exams Archive -->
   <div class="card" style="margin-bottom: 2.5rem;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">

@@ -24,11 +24,20 @@ function initTopicRadarChart(topicData) {
       }]
     },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: 12
+      },
       scales: {
         r: {
           angleLines: { color: '#30363d' },
           grid: { color: '#21262d' },
-          pointLabels: { color: '#8b949e', font: { size: 11 } },
+          pointLabels: {
+            color: '#8b949e',
+            font: { size: 10 },
+            callback: (label) => label.length > 14 ? label.match(/.{1,14}(\s|$)/g).map(s => s.trim()) : label
+          },
           suggestedMin: 0,
           suggestedMax: 100,
           ticks: { backdropColor: 'transparent', color: '#6e7681', stepSize: 25 }
